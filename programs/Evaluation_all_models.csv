@@ -1,0 +1,8 @@
+Metric,LSTM,Random Walk
+MSE,785.96,65.22
+RMSE,26.62,7.76
+MAE,13.17,4.78
+MAPE,1.55,0.42
+R-squared,0.82,0.98
+MSE Constraint,0.0,13.83
+MAE Constraint,0.0,1.84

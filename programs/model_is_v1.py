@@ -49,7 +49,7 @@ REQUIRED_COMMON_FEATURES = 2
 START_DATE = '2020-01-01'
 END_DATE = '2023-12-31'
 TIME_WINDOW = 3
-TEST_SIZE = 0.15
+TEST_SIZE = 0.20
 SEED = 97
 
 os.makedirs(data_dir, exist_ok=True)
@@ -121,34 +121,27 @@ for ticker in financial_data:
 
 ###################### IMPORTANT **********************
 features = [
-    # 'Cash Cash Equivalents And Short Term Investments',
-    # 'Accounts Receivable',
-    # 'Inventory',
-    # 'Other Current Assets',
-    # 'Net PPE',
-    # 'Accounts Payable',
-    # 'Current Deferred Revenue',
-    # 'Current Debt And Capital Lease Obligation',
-    # 'Long Term Debt And Capital Lease Obligation',
-    # 'Retained Earnings',
-    # 'Net Income',
-    # 'Repurchase Of Capital Stock'
-    # 'Total Revenue',
-    # 'Cost Of Revenue',
-    # 'Gross Profit',
-    # 'Operating Expense',
-    # 'Depreciation',
-    # 'Operating Cash Flow',
-    'Net Income',
-    'Operating Cash Flow'
-
+    'Total Assets',
+    'Total Liabilities Net Minority Interest',
+    'Working Capital',
+    'Retained Earnings',
+    'Net PPE',
+    'Cash Cash Equivalents And Short Term Investments',
+    'Inventory',
+    'Accounts Receivable',
+    'Operating Cash Flow',
+    'Free Cash Flow',
+    'Operating Cash Flow',
+    'Capital Expenditure',
+    'Changes In Cash',
+    'Cash Flow From Continuing Operating Activities'
 ]
 
 
 targets = [
-    'Total Assets',
-    'Total Liabilities Net Minority Interest',
-    'Total Equity Gross Minority Interest',
+    'Net Income',
+    'Total Revenue',
+    'Total Expenses',
 ]
 ###################### IMPORTANT **********************
 
@@ -362,7 +355,7 @@ if X.size > 0 and y.size > 0:
     plt.ylabel('Loss')
     
     # Save the figure to a file in the current directory
-    loss_curve_path = os.path.join(os.getcwd(), f'Loss_curve_{MODEL_NAME}.png')
+    loss_curve_path = os.path.join(os.getcwd(), f'Loss_curve_is_{MODEL_NAME}.png')
     plt.savefig(loss_curve_path)
     print(f"Loss curve is plotted successfully and saved to '{loss_curve_path}'.")
 else:
@@ -380,17 +373,17 @@ else:
 # Adjust predictions to satisfy the accounting equation
 def adjust_predictions(y_pred_level):
     """
-    Adjust predictions to ensure Total Assets = Total Liabilities + Shareholders' Equity
-    Assume the first three columns of y_pred are Total Assets, Total Liabilities Net Minority Interest, and Total Equity Gross Minority Interest
+    Adjust predictions to ensure Net Income = Total Revenue - Total Expenses
+    Assume the first three columns of y_pred are Net Income, Total Revenue, and Total Expenses
     """
     
     # Adjust predictions
     adjusted_y_pred_level = y_pred_level.copy()
-    total_liabilities = y_pred_level[:, 1]
-    total_equity = y_pred_level[:, 2]
+    total_revenue = y_pred_level[:, 1]
+    total_expenses = y_pred_level[:, 2]
 
     # Recalculate Total Assets
-    adjusted_y_pred_level[:, 0] = total_liabilities + total_equity
+    adjusted_y_pred_level[:, 0] = total_revenue - total_expenses
 
     return adjusted_y_pred_level
 
@@ -460,7 +453,7 @@ def evaluate_accounting_constraint(y_pred_level):
     """
 
     # Calculate the difference between assets and liabilities + equity
-    check = y_pred_level[:, 0] - (y_pred_level[:, 1] + y_pred_level[:, 2])
+    check = y_pred_level[:, 0] - (y_pred_level[:, 1] - y_pred_level[:, 2])
     mse_constraint = np.mean(np.square(check))
     mae_constraint = np.mean(np.abs(check))
 
@@ -499,58 +492,11 @@ if X.size > 0 and y.size > 0:
     metrics_df = pd.DataFrame(metrics_data).round(2)
 
     # Export the DataFrame to a CSV file
-    csv_path = os.path.join(os.getcwd(), f'Evaluation_all_models.csv')
+    csv_path = os.path.join(os.getcwd(), f'Evaluation_is_all_models.csv')
     metrics_df.to_csv(csv_path, index=False)
     print(f"Metrics table is exported successfully to '{csv_path}'.")
 else:
     print("The dataset is empty, unable to evaluate the accounting equation.")
-
-
-### make the table for comparison (not finished)
-
-# Forecast and save results (maintainence)
-
-# def forecast_financials(model, scaler_X, scaler_y, df, features, targets, time_window):
-#     """
-#     Use the trained model to predict new financial data
-#     """
-#     # Construct input data
-#     X_new, _ = create_dataset(df, features, targets, time_window)
-#     if len(X_new) == 0:
-#         print("Insufficient data, unable to make predictions.")
-#         return None
-#     X_new_scaled = scaler_X.transform(X_new.reshape(-1, X_new.shape[-1])).reshape(X_new.shape)
-
-#     # Predict
-#     y_new_pred_scaled = model.predict(X_new_scaled)
-#     # y_new_pred = scaler_y.inverse_transform(y_new_pred_scaled)
-
-#     # Adjust predictions
-#     y_new_pred_adjusted = adjust_predictions(y_new_pred_scaled, scaler_y)
-#     y_new_pred_adjusted_inv = scaler_y.inverse_transform(y_new_pred_adjusted)
-
-#     return y_new_pred_adjusted_inv
-
-# forecast_results = {}
-# for ticker in final_valid_tickers:
-#     df = processed_data[ticker]
-#     # Only keep the data within the defined date range
-#     df = df.loc[START_DATE:END_DATE]
-#     forecasted_financials = forecast_financials(model, scaler_X, scaler_y, df, final_features, targets,
-#                                                 time_window=TIME_WINDOW)
-#     if forecasted_financials is not None:
-#         # Get the latest forecasted results
-#         forecast_results[ticker] = forecasted_financials[-1]
-#         print(f"Forecasted Financials for {ticker}:\n{forecasted_financials[-1]}\n")
-#     else:
-#         print(f"Unable to predict financial data for {ticker}.\n")
-
-# # Save the results as a DataFrame
-# forecast_df = pd.DataFrame(forecast_results).T
-# forecast_df.columns = targets
-# forecast_df.to_csv('forecasted_financials.csv')
-# print("Forecast results have been saved to 'forecasted_financials.csv'.")
-
 
 
 
